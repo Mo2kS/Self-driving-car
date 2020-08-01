@@ -1,0 +1,68 @@
+import  sensor, image, lcd, time
+from machine import I2C
+
+
+#from board import board_info
+i2c = I2C(I2C.I2C0, freq=100000, scl=33, sda=32)
+
+lcd.init(type=2, freq=20000000, color=lcd.BLACK)
+sensor.reset(dual_buff=True)
+sensor.set_pixformat(sensor.RGB565)
+sensor.set_framesize(sensor.QVGA)
+sensor.set_vflip(1)
+sensor.run(1)
+sensor.skip_frames(40)
+thisTime = time.ticks_ms()
+f = open('/sd/dataset.csv', 'a+')
+lastTime = thisTime
+pictureId=0
+pictureDir = 0
+pictueInDirCount = 0
+
+
+
+img_co_l = 0
+img_co_f = 0
+img_co_r = 0
+
+
+try:
+  os.mkdir("/sd/"+str(pictureDir))
+except:
+  print("An exception occurred")
+
+clock = time.clock()
+while True:
+
+    thisTime = time.ticks_ms()
+
+    if (thisTime - lastTime) >= 50 :
+        lastTime = thisTime
+        print(clock.fps())
+        clock.tick()
+        img = sensor.snapshot()
+        data = i2c.readfrom(0x12, 3)
+       
+        if (int(data[2]) == 4) and (int(data[0]) > 135) :
+            pictureId=pictureId+1
+            pictueInDirCount = pictueInDirCount+1
+            if tong[1] < 85:
+                img_co_l = img_co_l+1
+            elif data[1] < 170:
+                img_co_f = img_co_f+1
+            else:
+                img_co_r = img_co_r+1
+            f.write(str(pictureDir)+"/"+str(pictureId)+","+str(int(data[0]))+","+str(int(data[1]))+"\n")
+            f.flush()
+            img.save("/sd/"+str(pictureDir)+"/"+str(pictureId)+".jpg")
+            if pictueInDirCount == 100 :
+                pictueInDirCount = 0
+                pictureDir = pictureDir+1
+                os.mkdir("/sd/"+str(pictureDir))
+        img2=0000000000000000000000000000000000000000000000000000000000000000 
+        image.Image(size=(240,240))
+        img2.draw_string(50, 0, "L = "+str(img_co_l), scale=2)
+        img2.draw_string(50, 20, "F = "+str(img_co_f), scale=2)
+        img2.draw_string(50, 40, "R = "+str(img_co_r), scale=2)
+        lcd.display(img2)
+
